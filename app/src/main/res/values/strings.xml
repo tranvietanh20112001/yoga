@@ -1,0 +1,56 @@
+<resources>
+
+    <!-- Homepage -->
+    <string name="app_name">Universal Yoga App</string>
+    <string name="app_title">Universal Yoga App</string>
+    <string name="manage_courses">Manage Courses</string>
+    <string name="manage_classes">Manage Classes</string>
+
+    <!--Course Home -->
+    <string name="add_course">Add New Course</string>
+    <string name="manage_courses_title">Manage Courses</string>
+
+    <!-- Add Course -->
+    <string name="add_course_activity_title">Add New Course</string>
+    <string name="course_name_hint">Course Name</string>
+    <string name="day_of_week_hint">Day of Week (e.g., Monday)</string>
+    <string name="time_hint">Time (e.g., 10:00 AM)</string>
+    <string name="capacity_hint">Capacity</string>
+    <string name="duration_hint">Duration (minutes)</string>
+    <string name="price_hint">Price per Class</string>
+    <string name="type_hint">Type (e.g., Flow Yoga)</string>
+    <string name="description_hint">Description (optional)</string>
+    <string name="save_button_text">Save</string>
+
+    <!-- Array for Days of the Week -->
+    <string-array name="days_of_week">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
+
+    <!-- Array for Course Types -->
+    <string-array name="course_types">
+        <item>Flow Yoga</item>
+        <item>Aerial Yoga</item>
+        <item>Family Yoga</item>
+    </string-array>
+    <!-- Update course -->
+    <string name="course_detail_title">Course Detail</string>
+    <string name="update_button">Update</string>
+    <string name="delete_button">Delete</string>
+    <string name="back_button_description">Back Button</string>
+        <string name="course_updated_success">Course updated successfully</string>
+        <string name="course_updated_failure">Failed to update course</string>
+        <string name="course_deleted_success">Course deleted successfully</string>
+        <string name="course_deleted_failure">Failed to delete course</string>
+
+
+    <!-- Class Home -->
+    <string name="class_home_title">Manage Classes</string>
+    <string name="add_classes">Add New Class</string>
+</resources>
