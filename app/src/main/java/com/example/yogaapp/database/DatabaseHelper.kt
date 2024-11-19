@@ -1,22 +1,22 @@
 package com.example.yogaapp.database
 
 
-import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.example.yogaapp.models.Course
 import android.database.Cursor
+import com.example.yogaapp.models.ClassInstance
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
-        private const val DATABASE_NAME = "YogaApp.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_NAME = "yoga_app.db"
+        private const val DATABASE_VERSION = 2
 
         const val TABLE_COURSES = "courses"
-        const val COLUMN_ID = "id"
+        const val COLUMN_ID = "course_id"
         const val COLUMN_NAME = "name"
         const val COLUMN_DAY_OF_WEEK = "day_of_week"
         const val COLUMN_TIME = "time"
@@ -27,6 +27,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val COLUMN_DESCRIPTION = "description"
 
         const val TABLE_CLASS ="classes"
+        const val CLASS_NAME = "class_name"
         const val COLUMN_CLASS_ID ="id"
         const val COURSE_ID = "courseId"
         const val DATE = "date"
@@ -53,18 +54,21 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             CREATE TABLE $TABLE_CLASS (
                 $COLUMN_CLASS_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 $COURSE_ID INTEGER NOT NULL,
+                $CLASS_NAME TEXT NOT NULL,
                 $DATE TEXT NOT NULL,
                 $TEACHER TEXT NOT NULL,
                 FOREIGN KEY($COURSE_ID) REFERENCES $TABLE_COURSES($COLUMN_ID)
             );
         """
         db.execSQL(createClassInstanceTable)
+
     }
 
 
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS $TABLE_COURSES")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_CLASS")
         onCreate(db)
     }
 
@@ -122,6 +126,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         var course: Course? = null
         if (cursor.moveToFirst()) {
+            val idIndex = cursor.getColumnIndex(COLUMN_ID)
             val nameIndex = cursor.getColumnIndex(COLUMN_NAME)
             val dayOfWeekIndex = cursor.getColumnIndex(COLUMN_DAY_OF_WEEK)
             val timeIndex = cursor.getColumnIndex(COLUMN_TIME)
@@ -192,4 +197,110 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         return result > 0
     }
+
+    fun insertClass(classInstance: ClassInstance): Long {
+        val db = this.writableDatabase
+        val contentValues = ContentValues()
+        contentValues.put(CLASS_NAME, classInstance.className)
+        contentValues.put(DATE, classInstance.date)
+        contentValues.put(TEACHER, classInstance.teacher)
+        contentValues.put(COURSE_ID, classInstance.courseId)
+
+        return db.insert(TABLE_CLASS, null, contentValues)
+    }
+
+    fun getClasses(): List<ClassInstance> {
+        val classList = mutableListOf<ClassInstance>()
+        val db = readableDatabase
+        val query = "SELECT * FROM $TABLE_CLASS"
+        val cursor = db.rawQuery(query, null)
+
+        if (cursor.moveToFirst()) {
+            do {
+                val id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_CLASS_ID))
+                val className = cursor.getString(cursor.getColumnIndexOrThrow(CLASS_NAME))
+                val date = cursor.getString(cursor.getColumnIndexOrThrow(DATE))
+                val teacher = cursor.getString(cursor.getColumnIndexOrThrow(TEACHER))
+                val courseId = cursor.getInt(cursor.getColumnIndexOrThrow(COURSE_ID))
+
+                val classInstance = ClassInstance(
+                    id = id,
+                    className = className,
+                    date = date,
+                    teacher = teacher,
+                    courseId = courseId
+                )
+                classList.add(classInstance)
+            } while (cursor.moveToNext())
+        }
+
+        cursor.close()
+        db.close()
+        return classList
+    }
+
+    fun getClassById(id: Int): ClassInstance? {
+        val db = this.readableDatabase
+        val cursor: Cursor = db.query(
+            TABLE_CLASS,
+            null,
+            "$COLUMN_CLASS_ID = ?",
+            arrayOf(id.toString()),
+            null, null, null
+        )
+
+        var classInstance: ClassInstance? = null
+        if (cursor.moveToFirst()) {
+            val idIndex = cursor.getColumnIndex(COLUMN_CLASS_ID)
+            val classNameIndex = cursor.getColumnIndex(CLASS_NAME)
+            val dateIndex = cursor.getColumnIndex(DATE)
+            val teacherIndex = cursor.getColumnIndex(TEACHER)
+            val courseIdIndex = cursor.getColumnIndex(COURSE_ID)
+
+            classInstance = ClassInstance(
+                id = cursor.getInt(idIndex),
+                className = cursor.getString(classNameIndex),
+                date = cursor.getString(dateIndex),
+                teacher = cursor.getString(teacherIndex),
+                courseId = cursor.getInt(courseIdIndex)
+            )
+        }
+
+        cursor.close()
+        return classInstance
+    }
+
+    fun updateClass(classInstance: ClassInstance): Boolean {
+        val db = this.writableDatabase
+        val contentValues = ContentValues().apply {
+            put(CLASS_NAME, classInstance.className)
+            put(DATE, classInstance.date)
+            put(TEACHER, classInstance.teacher)
+            put(COURSE_ID, classInstance.courseId)
+        }
+
+        val result = db.update(
+            TABLE_CLASS,
+            contentValues,
+            "$COLUMN_CLASS_ID = ?",
+            arrayOf(classInstance.id.toString())
+        )
+
+        db.close()
+        return result > 0
+    }
+
+    fun deleteClass(classInstanceId: Int): Boolean {
+        val db = this.writableDatabase
+        val result = db.delete(
+            TABLE_CLASS,
+            "$COLUMN_CLASS_ID = ?",
+            arrayOf(classInstanceId.toString())
+        )
+        db.close()
+        return result > 0
+    }
+
+
+
 }

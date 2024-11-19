@@ -4,17 +4,6 @@
     android:padding="16dp"
     android:background="#FFFFFF">
 
-    <!-- Back Button -->
-<!--    <ImageButton-->
-<!--        android:id="@+id/btnBack"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_alignParentStart="true"-->
-<!--        android:layout_alignParentTop="true"-->
-<!--        android:src="@drawable/ic_back"-->
-<!--        android:background="?android:attr/selectableItemBackgroundBorderless"-->
-<!--        android:contentDescription="@string/back_button_description"-->
-<!--        android:layout_marginTop="32dp"/>-->
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnBack"
@@ -26,6 +15,7 @@
         android:layout_marginTop="16dp"
         android:textColor="#000000"/>
     <!-- Title Text -->
+
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
@@ -39,12 +29,29 @@
 
 
 
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilCourseId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btnBack"
+        android:layout_marginTop="16dp"
+        >
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCourseId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/course_id_hint"
+            android:enabled="false"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
     <!-- Course Name Field -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilCourseName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/btnBack"
+        android:layout_below="@id/tilCourseId"
         android:layout_marginTop="16dp">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -54,6 +61,8 @@
             android:hint="@string/course_name_hint"
             android:inputType="text" />
     </com.google.android.material.textfield.TextInputLayout>
+
+
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilDayOfWeek"

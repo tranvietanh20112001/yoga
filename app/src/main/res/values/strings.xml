@@ -49,8 +49,27 @@
         <string name="course_deleted_success">Course deleted successfully</string>
         <string name="course_deleted_failure">Failed to delete course</string>
 
+    <string name="course_id_hint">Course ID</string>
+
 
     <!-- Class Home -->
     <string name="class_home_title">Manage Classes</string>
     <string name="add_classes">Add New Class</string>
+
+<!--    Add Class-->
+
+    <string name="back_button">Back</string>
+    <string name="add_class_title">Add Class</string>
+    <string name="class_name_hint">Class Name</string>
+    <string name="select_course_hint">Select Course</string>
+    <string name="class_date_hint">Class Date (yyyy-MM-dd)</string>
+    <string name="teacher_name_hint">Teacher Name</string>
+    <string name="save_class_button">Save Class</string>
+
+    <!-- Update Class -->
+    <string name="class_updated_success">Class updated successfully!</string>
+    <string name="class_updated_failure">Failed to update class. Please try again.</string>
+    <string name="class_deleted_success">Class deleted successfully!</string>
+    <string name="class_id_not_found">Class it not found</string>
+    <string name="class_deleted_failure">Failed to delete class. Please try again.</string>
 </resources>

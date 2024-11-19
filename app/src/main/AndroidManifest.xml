@@ -25,6 +25,8 @@
         <activity android:name=".activities.course.AddCourseActivity" />
         <activity android:name=".activities.course.CourseDetailActivity" />
         <activity android:name=".activities.classes.ClassHomeActivity" />
+        <activity android:name=".activities.classes.AddClassActivity" />
+        <activity android:name=".activities.classes.ClassDetailActivity" />
     </application>
 
 </manifest>

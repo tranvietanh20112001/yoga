@@ -1,5 +1,6 @@
 package com.example.yogaapp.activities.course
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
@@ -15,6 +16,7 @@ class CourseDetailActivity : AppCompatActivity() {
     private lateinit var dbHelper: DatabaseHelper
     private lateinit var course: Course
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.course_detail)
@@ -24,6 +26,7 @@ class CourseDetailActivity : AppCompatActivity() {
         val courseId = intent.getIntExtra("course_id", -1)
         course = dbHelper.getCourseById(courseId) ?: return
 
+        val etCourseId = findViewById<EditText>(R.id.etCourseId)
         val etCourseName = findViewById<EditText>(R.id.etCourseName)
         val etDayOfWeek = findViewById<EditText>(R.id.etDayOfWeek)
         val etTime = findViewById<EditText>(R.id.etTime)
@@ -33,6 +36,8 @@ class CourseDetailActivity : AppCompatActivity() {
         val etType = findViewById<EditText>(R.id.etType)
         val etDescription = findViewById<EditText>(R.id.etDescription)
 
+
+        etCourseId.setText(course.id.toString())
         etCourseName.setText(course.name)
         etDayOfWeek.setText(course.dayOfWeek)
         etTime.setText(course.time)
