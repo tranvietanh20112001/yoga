@@ -2,19 +2,26 @@ package com.example.yogaapp.database
 
 
 import android.content.ContentValues
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.example.yogaapp.models.Course
 import android.database.Cursor
+import android.util.Log
 import com.example.yogaapp.models.ClassInstance
+import com.google.firebase.firestore.FirebaseFirestore
+
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
+
+
     companion object {
         private const val DATABASE_NAME = "yoga_app.db"
-        private const val DATABASE_VERSION = 2
+        private const val DATABASE_VERSION = 3
 
+        // table course
         const val TABLE_COURSES = "courses"
         const val COLUMN_ID = "course_id"
         const val COLUMN_NAME = "name"
@@ -33,6 +40,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val DATE = "date"
                 const val TEACHER = "teacher"
     }
+
+    private val dbFirestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(db: SQLiteDatabase) {
         val createCoursesTable = """
@@ -86,8 +95,16 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         val result = db.insert(TABLE_COURSES, null, values)
         db.close()
+
+        if (result != -1L) {
+            uploadCoursesToFirestore()
+        }
+
         return result != -1L
+
+
     }
+
 
     fun getAllCourses(): MutableList<Course> {
         val courseList = mutableListOf<Course>()
@@ -126,7 +143,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         var course: Course? = null
         if (cursor.moveToFirst()) {
-            val idIndex = cursor.getColumnIndex(COLUMN_ID)
             val nameIndex = cursor.getColumnIndex(COLUMN_NAME)
             val dayOfWeekIndex = cursor.getColumnIndex(COLUMN_DAY_OF_WEEK)
             val timeIndex = cursor.getColumnIndex(COLUMN_TIME)
@@ -161,17 +177,29 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     fun deleteCourse(courseId: Int): Boolean {
         val db = this.writableDatabase
-
         val result = db.delete(
             TABLE_COURSES,
             "$COLUMN_ID = ?",
             arrayOf(courseId.toString())
         )
 
-        db.close()
+        if (result > 0) {
+            dbFirestore.collection("courses")
+                .document(courseId.toString())
+                .delete()
+                .addOnSuccessListener {
+                    Log.d(TAG, "Course with ID $courseId successfully deleted from Firestore.")
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error deleting course from Firestore: ${e.message}")
+                }
+        }
 
+        db.close()
         return result > 0
     }
+
+
 
     fun updateCourse(course: Course): Boolean {
         val db = this.writableDatabase
@@ -193,24 +221,89 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             arrayOf(course.id.toString())
         )
 
-        db.close()
+        if (result > 0) {
+            val courseMap = mapOf(
+                "name" to course.name,
+                "dayOfWeek" to course.dayOfWeek,
+                "time" to course.time,
+                "capacity" to course.capacity,
+                "duration" to course.duration,
+                "price" to course.price,
+                "type" to course.type,
+                "description" to course.description
+            )
 
+            dbFirestore.collection("courses")
+                .document(course.id.toString())
+                .set(courseMap)
+                .addOnSuccessListener {
+                    Log.d(TAG, "Course with ID ${course.id} successfully updated in Firestore.")
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error updating course in Firestore: ${e.message}")
+                }
+        }
+
+        db.close()
         return result > 0
+    }
+
+
+    fun uploadCoursesToFirestore() {
+        val courseList = getAllCourses()
+        for (course in courseList) {
+            val courseMap = hashMapOf(
+                "name" to course.name,
+                "dayOfWeek" to course.dayOfWeek,
+                "time" to course.time,
+                "capacity" to course.capacity,
+                "duration" to course.duration,
+                "price" to course.price,
+                "type" to course.type,
+                "description" to course.description
+            )
+            dbFirestore.collection("courses")
+                .document(course.id.toString())
+                .set(courseMap)
+                .addOnSuccessListener {
+                    Log.d(TAG,"SUCCESSFULL")
+                }
+                .addOnFailureListener { e ->
+                    Log.d(TAG,"Error uploading course: ${e.message}")
+                }
+        }
     }
 
     fun insertClass(classInstance: ClassInstance): Long {
         val db = this.writableDatabase
-        val contentValues = ContentValues()
-        contentValues.put(CLASS_NAME, classInstance.className)
-        contentValues.put(DATE, classInstance.date)
-        contentValues.put(TEACHER, classInstance.teacher)
-        contentValues.put(COURSE_ID, classInstance.courseId)
+        val contentValues = ContentValues().apply {
+            put(CLASS_NAME, classInstance.className)
+            put(DATE, classInstance.date)
+            put(TEACHER, classInstance.teacher)
+            put(COURSE_ID, classInstance.courseId)
+        }
 
-        return db.insert(TABLE_CLASS, null, contentValues)
+        val id = db.insert(TABLE_CLASS, null, contentValues)
+
+        if (id > 0) {
+            // Sync with Firebase
+            val dbFirebase = FirebaseFirestore.getInstance()
+            val classData = hashMapOf(
+                "className" to classInstance.className,
+                "date" to classInstance.date,
+                "teacher" to classInstance.teacher,
+                "courseId" to classInstance.courseId
+            )
+            dbFirebase.collection("classes").document(id.toString()).set(classData)
+        }
+
+        db.close()
+        return id
     }
 
     fun getClasses(): List<ClassInstance> {
         val classList = mutableListOf<ClassInstance>()
+
         val db = readableDatabase
         val query = "SELECT * FROM $TABLE_CLASS"
         val cursor = db.rawQuery(query, null)
@@ -235,11 +328,40 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
 
         cursor.close()
+
+        val dbFirebase = FirebaseFirestore.getInstance()
+        dbFirebase.collection("classes").get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    val id = document.id.toInt()
+                    val className = document.getString("className") ?: ""
+                    val date = document.getString("date") ?: ""
+                    val teacher = document.getString("teacher") ?: ""
+                    val courseId = document.getLong("courseId")?.toInt() ?: 0
+
+                    val classInstance = ClassInstance(
+                        id = id,
+                        className = className,
+                        date = date,
+                        teacher = teacher,
+                        courseId = courseId
+                    )
+                    if (classList.none { it.id == id }) {
+                        classList.add(classInstance)
+                    }
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.w("getClasses", "Error getting classes from Firebase", exception)
+            }
+
         db.close()
         return classList
     }
 
     fun getClassById(id: Int): ClassInstance? {
+        var classInstance: ClassInstance? = null
+
         val db = this.readableDatabase
         val cursor: Cursor = db.query(
             TABLE_CLASS,
@@ -249,7 +371,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             null, null, null
         )
 
-        var classInstance: ClassInstance? = null
         if (cursor.moveToFirst()) {
             val idIndex = cursor.getColumnIndex(COLUMN_CLASS_ID)
             val classNameIndex = cursor.getColumnIndex(CLASS_NAME)
@@ -267,6 +388,32 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
 
         cursor.close()
+
+        if (classInstance == null) {
+            val dbFirebase = FirebaseFirestore.getInstance()
+            dbFirebase.collection("classes").document(id.toString())
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        val className = document.getString("className") ?: ""
+                        val date = document.getString("date") ?: ""
+                        val teacher = document.getString("teacher") ?: ""
+                        val courseId = document.getLong("courseId")?.toInt() ?: 0
+
+                        classInstance = ClassInstance(
+                            id = id,
+                            className = className,
+                            date = date,
+                            teacher = teacher,
+                            courseId = courseId
+                        )
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Log.w("getClassById", "Error getting class from Firebase", exception)
+                }
+        }
+
         return classInstance
     }
 
@@ -286,6 +433,23 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             arrayOf(classInstance.id.toString())
         )
 
+        if (result > 0) {
+            val dbFirebase = FirebaseFirestore.getInstance()
+            dbFirebase.collection("classes").document(classInstance.id.toString())
+                .set(mapOf(
+                    "className" to classInstance.className,
+                    "date" to classInstance.date,
+                    "teacher" to classInstance.teacher,
+                    "courseId" to classInstance.courseId
+                ))
+                .addOnSuccessListener {
+                    Log.d("updateClass", "Class updated in Firebase successfully")
+                }
+                .addOnFailureListener { exception ->
+                    Log.e("updateClass", "Error updating class in Firebase", exception)
+                }
+        }
+
         db.close()
         return result > 0
     }
@@ -297,6 +461,19 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             "$COLUMN_CLASS_ID = ?",
             arrayOf(classInstanceId.toString())
         )
+
+        if (result > 0) {
+            val dbFirebase = FirebaseFirestore.getInstance()
+            dbFirebase.collection("classes").document(classInstanceId.toString())
+                .delete()
+                .addOnSuccessListener {
+                    Log.d("deleteClass", "Class deleted from Firebase successfully")
+                }
+                .addOnFailureListener { exception ->
+                    Log.e("deleteClass", "Error deleting class from Firebase", exception)
+                }
+        }
+
         db.close()
         return result > 0
     }

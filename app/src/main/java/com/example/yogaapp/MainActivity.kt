@@ -1,11 +1,15 @@
 package com.example.yogaapp
 
+import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.example.yogaapp.activities.classes.ClassHomeActivity
 import com.example.yogaapp.activities.course.CourseHomeActivity
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 
 
 class MainActivity : AppCompatActivity() {
@@ -25,5 +29,8 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, ClassHomeActivity::class.java)
             startActivity(intent)
         }
-    }
-}
+
+
+
+
+}}
